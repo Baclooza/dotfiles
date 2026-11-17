@@ -1,28 +1,21 @@
-#!/bin/bash
+cat << 'EOF' > ~/dotfiles/install.sh
+#!/usr/bin/env bash
 set -e
 
-echo "🚀 Installing Starship Prompt..."
-
-# 1. Install the Starship binary to a user-writable directory (~/.local/bin)
-mkdir -p "$HOME/.local/bin"
-curl -sS https://starship.rs | sh -s -- --bin-dir "$HOME/.local/bin" -y
-
-# 2. Add ~/.local/bin to PATH if it isn't already there
-if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
-    export PATH="$HOME/.local/bin:$PATH"
+# Install Starship if it isn't already installed
+if ! command -v starship &> /dev/null; then
+    curl -sS https://starship.rs | sh -s -- -y
 fi
 
-# 3. Inject Starship initialization into shell profiles if not already present
-# For Bash
-if [ -f "$HOME/.bashrc" ] && ! grep -q 'starship init bash' "$HOME/.bashrc"; then
-    echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
-    echo 'eval "$(starship init bash)"' >> "$HOME/.bashrc"
+# Add Starship init to .bashrc (avoiding duplicates)
+if ! grep -q "starship init bash" ~/.bashrc; then
+    echo 'eval "$(starship init bash)"' >> ~/.bashrc
 fi
 
-# For Zsh (in case the dev container uses it)
-if [ -f "$HOME/.zshrc" ] && ! grep -q 'starship init zsh' "$HOME/.zshrc"; then
-    echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.zshrc"
-    echo 'eval "$(starship init zsh)"' >> "$HOME/.zshrc"
+# Link custom Starship config if it exists in the dotfiles repo
+DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$DOTFILES_DIR/starship.toml" ]; then
+    mkdir -p ~/.config
+    ln -sf "$DOTFILES_DIR/starship.toml" ~/.config/starship.toml
 fi
-
-echo "✅ Starship setup complete!"
+EOF
